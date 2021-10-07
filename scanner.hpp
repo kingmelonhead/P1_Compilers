@@ -1,6 +1,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <vector>
 void driver(std::string);
 void print_file_error(std::string);
 struct container {
