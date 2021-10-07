@@ -58,3 +58,40 @@ int FSA_Table[state_no][col_no] = {
 /* s22 */{FINAL,   FINAL, FINAL,  FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL},
 /* s23 */{FINAL,   FINAL, FINAL,  FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL},
 };
+
+void driver(std::string filename){
+
+    container filter_data;
+
+    //attempt to open file
+    std::fstream in_file;
+    in_file.open(filename, std::fstream::in);
+
+    //if file cant open, then it doesnt exist
+    if(!in_file.is_open()) {
+        in_file.close();
+        print_file_error(filename);
+    }
+
+    //if code makes it here then the file opened properly
+
+    while (!filter_data.end_of_file){
+        filter_data = refresh_filter(in_file);
+    }
+
+
+    in_file.close();
+}
+
+void print_file_error(std::string filename){
+    std::cout << "Error: The provided file " << filename << " does not exist in the current directory.\nExiting Program...\n";
+    exit(0);
+}
+
+container refresh_filter(std::fstream infile){
+    container temp;
+    
+
+
+    return temp;
+}
