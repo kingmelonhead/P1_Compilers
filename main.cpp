@@ -1,4 +1,7 @@
 #include "scanner.hpp"
+
+void print_arg_error();
+
 int main(int argc, char *argv[]){
 
     if (argc != 2) print_arg_error();

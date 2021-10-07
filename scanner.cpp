@@ -1,5 +1,5 @@
 #include "scanner.hpp"
-
+#include "token.hpp"
 /*
 pseudocode for the scanner, just to keep a mental picture of where this is going:
 
@@ -29,6 +29,8 @@ const int state_no = 23;
 const int col_no = 24;
 const int ERROR = -1;
 const int FINAL = 100;
+
+bool open_comment = false;
 
 enum states {s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23};
 
@@ -61,6 +63,8 @@ int FSA_Table[state_no][col_no] = {
 
 void driver(std::string filename){
 
+    int line_no = 1;
+
     container filter_data;
 
     //attempt to open file
@@ -76,7 +80,8 @@ void driver(std::string filename){
     //if code makes it here then the file opened properly
 
     while (!filter_data.end_of_file){
-        filter_data = refresh_filter(in_file);
+        filter_data = refresh_filter(in_file, line_no);
+        std::cout << "Filter: " << filter_data.filter << " line no: " << filter_data.line_no << std::endl;
     }
 
 
@@ -88,10 +93,62 @@ void print_file_error(std::string filename){
     exit(0);
 }
 
-container refresh_filter(std::fstream infile){
+container refresh_filter(std::fstream &infile, int &line_no){
     container temp;
+    int filter_length;
+    std::string temp_string;
+    int comment_start = -1, comment_end = -1;
+    while (1){
+        
+        if (std::getline(infile, temp.filter)){ // gets line if possible
+
+            temp.line_no = line_no; // sets line number 
+            line_no++; // increments accumulator in driver
+
+            filter_length = temp.filter.length();
+
+            if (!all_ws(temp.filter)){  //if the string is not all white space
+
+                remove_comments(temp.filter); // then remove comments
+                
+                if (!all_ws(temp.filter)){ // if the string is not all white space after removing comments
+
+                    break; // then break the while loop
+                }
+
+            }
+
+        // if code makes it out here that means that a line was all white space or all comments so the while loop will loop again
+
+        }
+        else {
+            //end of file is reached
+            temp.end_of_file = true;
+            break;
+        }
+
+    }
+
     
-
-
     return temp;
+}
+
+bool all_ws(std::string text){
+    //function that determines if a string is all white space
+
+    bool all_white = true;
+
+    int len = text.length();
+    if (len == 0) return true;
+
+    for (int i = 0; i < len ; i++){
+        if (text[i] != ' ') all_white = false;
+    }
+
+    return all_white;
+
+}
+
+void remove_comments(std::string &text){
+
 }
