@@ -1,29 +1,5 @@
 #include "scanner.hpp"
 #include "token.hpp"
-/*
-pseudocode for the scanner, just to keep a mental picture of where this is going:
-
-string getNextFilter(parameters: file stream object){
-
-    - if a line is comment, go to next line
-    - scan the line for comments, remove part of line that has comments
-    - if the whole line is comments skip to next line
-    - if the whole line is white space
-    - once there is a valid string then return it
-}
-
-driver function - this will be called from the main.cpp (parameters: file name as string)  {
-
-    -string var: filter
-
-    -attempt to open the file, if file does not exist then error and close program
-
-    -call the getNextFilter to get a line to scan 
-
-    
-}
-
-*/
 
 const int state_no = 23;
 const int col_no = 24;
@@ -81,10 +57,8 @@ void driver(std::string filename){
 
     while (!filter_data.end_of_file){
         filter_data = refresh_filter(in_file, line_no);
-        std::cout << "Filter: " << filter_data.filter << " line no: " << filter_data.line_no << std::endl;
+        if (filter_data.line_no != -1) std::cout << "Filter: " << filter_data.filter << " line no: " << filter_data.line_no << std::endl;
     }
-
-
     in_file.close();
 }
 
@@ -94,61 +68,81 @@ void print_file_error(std::string filename){
 }
 
 container refresh_filter(std::fstream &infile, int &line_no){
+
     container temp;
-    int filter_length;
-    std::string temp_string;
-    int comment_start = -1, comment_end = -1;
+
     while (1){
         
-        if (std::getline(infile, temp.filter)){ // gets line if possible
+        if (std::getline(infile, temp.filter)){     // gets line if not EOF
 
-            temp.line_no = line_no; // sets line number 
-            line_no++; // increments accumulator in driver
+            temp.line_no = line_no; 
+            line_no++; 
 
-            filter_length = temp.filter.length();
+            remove_comments(temp.filter);           // attempt to remove comments
 
-            if (!all_ws(temp.filter)){  //if the string is not all white space
-
-                remove_comments(temp.filter); // then remove comments
-                
-                if (!all_ws(temp.filter)){ // if the string is not all white space after removing comments
-
-                    break; // then break the while loop
-                }
-
-            }
-
-        // if code makes it out here that means that a line was all white space or all comments so the while loop will loop again
-
+            if (!all_ws(temp.filter)) break;        // if filter is not empty after removing comments then filter is good           
         }
-        else {
-            //end of file is reached
+        else {                                      // end of file is reached
             temp.end_of_file = true;
             break;
         }
-
     }
-
-    
     return temp;
 }
 
 bool all_ws(std::string text){
     //function that determines if a string is all white space
 
-    bool all_white = true;
-
     int len = text.length();
     if (len == 0) return true;
-
-    for (int i = 0; i < len ; i++){
-        if (text[i] != ' ') all_white = false;
-    }
-
-    return all_white;
-
+    for (int i = 0; i < len ; i++) if (text[i] != ' ') return false;
+    return true;
 }
 
 void remove_comments(std::string &text){
+    // function to remove comments from the filter, will recursively call itself after removing comments
+    // this is to ensure full removal of comments even if there are multiple comments embeded on a single line
 
+    int len = text.length();
+    int open_com = -10, close_com = -10;
+
+    if (all_ws(text)) return;
+
+    if (!open_comment){                                 // if there is not currently open comments
+        for (int i = 0; i <= len - 2; i++){             // iterate through string
+            if (text[i] == '&' && text[i+1] == '&'){    // && detected
+                if (i != open_com + 1){                 // && detected is new
+                    if (open_com > -10){                // if open comment has been detected already
+                        close_com = i+1;
+                        text.erase(open_com, (close_com - open_com) + 1); 
+                        remove_comments(text);
+                        return;
+                    }
+                    else open_com = i;                  // open coment is made
+                }
+            }
+        }  
+        //code reaches here if it gets through the whole loop without a completed embeded comment
+        if (open_com > -1){                             // comment started this line but not closed
+            text.erase(open_com, (len - open_com)); 
+            open_comment = true;
+            return;
+        }
+    }
+    else {                                               // there is an open comment already
+        if (len == 1) {                                  // if there is only one character then its impossible to close the comment on this line
+            text = ""; 
+            return;
+        }
+        for (int i = 0; i <= len - 2; i++){
+            if (text[i] == '&' && text[i+1] == '&'){
+                text.erase(0, i + 2);
+                open_comment = false;
+                remove_comments(text);
+                return;
+            }
+        }
+        //if code gets all the way through that loop without hiting a close symbol and there is an open comment then just delete the ehole thing
+        text = "";
+    }
 }
