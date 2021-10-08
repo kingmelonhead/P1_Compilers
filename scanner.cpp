@@ -1,5 +1,7 @@
 #include "scanner.hpp"
 #include "token.hpp"
+#include <iostream>
+#include <vector>
 
 const int state_no = 23;
 const int col_no = 25;
@@ -9,12 +11,6 @@ const int FINAL = 100;
 bool open_comment = false;
 
 std::fstream in_file;
-
-enum states {s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24};
-
-//if something is determined to be an identifier token, it will be checked to see if it matches any of the reserved keywords
-//if the ID_Token does end up being a keyword then it gets marked as a Key_Token before being returned
-std::string keywords[16] = {"start", "stop", "loop", "while", "for", "label", "exit", "listen", "talk", "program", "if", "then", "assign", "declare", "jump", "else"};   
 
 int FSA_Table[state_no][col_no] = {
 //               a-z     A-Z      0-9     $     =       >      <      :     +       -      *      /      %      .      (      )      ,      {      }      ;      [     ]     WS     EOF   OTHER
@@ -43,33 +39,16 @@ int FSA_Table[state_no][col_no] = {
 /* s23  ] */ {FINAL,   FINAL, FINAL,  FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, ERROR},
 };
 
-std::map <char, columns> m = {
-    {'a',low}, {'b',low}, {'c',low}, {'d',low}, {'e',low}, {'f',low}, {'g',low}, {'h',low}, {'i',low}, {'j',low}, {'k',low}, {'l',low}, {'m',low},
-    {'n',low}, {'o',low}, {'p',low}, {'q',low}, {'r',low}, {'s',low}, {'t',low}, {'u',low}, {'v',low}, {'w',low}, {'x',low}, {'y',low}, {'z',low},
-    {'A', up}, {'B', up}, {'C', up}, {'D', up}, {'E', up}, {'F', up}, {'G', up}, {'H', up}, {'I', up}, {'J', up}, {'K', up}, {'L', up}, {'M', up}, 
-    {'N', up}, {'O', up}, {'P', up}, {'Q', up}, {'R', up}, {'S', up}, {'T', up}, {'U', up}, {'V', up}, {'W', up}, {'X', up}, {'Y', up}, {'Z', up}, 
-    {'0', num}, {'1', num}, {'2', num}, {'3', num}, {'4', num}, {'5', num}, {'6', num}, {'7', num}, {'8', num}, {'9', num}, 
-    {'$', dol}, {'=', eq}, {'<', lt}, {'>', gt}, {':', col}, {'+', plu}, {'-', sub}, {'*', mul}, {'/', divi}, {'%', perc}, {'.', dot}, {'(', lper}, 
-    {')', rper}, {',', com}, {'{', lcur}, {'}', rcur}, {';', sem}, {'[', lsq}, {']', rsq}, {' ', ws}
-};
+
 
 void driver(std::string filename){
 
     std::vector<token> tokens;
-    int line_no = 1;
     std::string temp_string = "";
-    container filter_data;
-    int filter_len;
     token temp_token;
-
     tokenID kind;
-
-    int state;
-    int look_ahead;
-
-    int current_column;
-
-    int test_state;
+    container filter_data;
+    int filter_len, state, look_ahead, current_column, line_no = 1;
 
     //attempt to open file
     in_file.open(filename, std::fstream::in);
@@ -79,8 +58,6 @@ void driver(std::string filename){
         in_file.close();
         print_file_error(filename);
     }
-
-    //if code makes it here then the file opened properly
 
     while (!filter_data.end_of_file){
 
@@ -94,7 +71,7 @@ void driver(std::string filename){
             //iterate over the filter
             for (int i = 0; i <= filter_len - 2; i++){
                 //all logic for tokenization goes in here
-                current_column = get_col(filter_data.filter[i]);
+                current_column = get_col(filter_data.filter[i], m);
                 look_ahead = FSA_Table[state][current_column];
                 kind = tokenID(state);
                 if (look_ahead == ERROR){
@@ -102,55 +79,38 @@ void driver(std::string filename){
                     early_exit();
                 }
 
-                if (look_ahead != s1 && current_column != ws) {
-                    temp_string += filter_data.filter[i];
-                }
+                if (look_ahead != s1 && current_column != ws) temp_string += filter_data.filter[i];
                 
                 if (look_ahead == FINAL || temp_string.length() == MAX_ID_LEN){
-
-                    if (is_keyword(temp_string)){
-                        kind = Key_Token;
-                    }
-                    temp_token.line_no = line_no;
-                    temp_token.token_string = temp_string;
-                    temp_token.token_type = kind;
-
+                    if (is_keyword(temp_string)) kind = Key_Token;
+                    temp_token = gen_token(temp_string, line_no, kind);
                     tokens.emplace_back(temp_token);
-
                     temp_string = "";
                     state = s1;
                 }
-                else {
-                    state = look_ahead;
-                }
-
+                else state = look_ahead;
             }
             if (temp_string != ""){
                 //if there is characters in the working token then turn it to a token
                 kind = tokenID(state);
-
-                if (is_keyword(temp_string)){
-                        kind = Key_Token;
-                }
-
-                temp_token.line_no = line_no;
-                temp_token.token_string = temp_string;
-                temp_token.token_type = kind;
-
+                if (is_keyword(temp_string)) kind = Key_Token;
+                temp_token = gen_token(temp_string, line_no, kind);
                 tokens.emplace_back(temp_token);
                 temp_string = "";
             }
         }
     }
-
     //here end of file is reached
-
-
-
     print_vector(tokens);
-
-
     in_file.close();
+}
+
+token gen_token(std::string text, int line_no, tokenID kind){
+    token temp;
+    temp.line_no = line_no;
+    temp.token_string = text;
+    temp.token_type = kind;
+    return temp;
 }
 
 void print_file_error(std::string filename){
@@ -233,7 +193,7 @@ void early_exit() {
     exit (0);
 }
 
-int get_col(char c){
+int get_col(char c, std::map<char, columns> &m){
     auto temp = m.find(c);
     if (temp == m.end()){
         //std::cout << "ERROR: " << c << " is not a valid symbol\nProgram exiting...\n";

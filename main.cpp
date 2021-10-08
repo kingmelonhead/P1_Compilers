@@ -1,4 +1,5 @@
 #include "scanner.hpp"
+#include <iostream>
 
 void print_arg_error();
 

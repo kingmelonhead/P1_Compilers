@@ -1,8 +1,3 @@
-theeeeeeeee quick brown for if + 1
-fox 
-
-jumped
-
-123
-
-=
+if ($num == 2) {
+    c = a / b;
+}
