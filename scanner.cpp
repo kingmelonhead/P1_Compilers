@@ -1,4 +1,5 @@
 #include "scanner.hpp"
+#include "token.hpp"
 
 const int state_no = 23;
 const int col_no = 25;
@@ -10,6 +11,10 @@ bool open_comment = false;
 std::fstream in_file;
 
 enum states {s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24};
+
+//if something is determined to be an identifier token, it will be checked to see if it matches any of the reserved keywords
+//if the ID_Token does end up being a keyword then it gets marked as a Key_Token before being returned
+std::string keywords[16] = {"start", "stop", "loop", "while", "for", "label", "exit", "listen", "talk", "program", "if", "then", "assign", "declare", "jump", "else"};   
 
 int FSA_Table[state_no][col_no] = {
 //               a-z     A-Z      0-9     $     =       >      <      :     +       -      *      /      %      .      (      )      ,      {      }      ;      [     ]     WS     EOF   OTHER
@@ -51,24 +56,20 @@ std::map <char, columns> m = {
 void driver(std::string filename){
 
     std::vector<token> tokens;
-
     int line_no = 1;
-
     std::string temp_string = "";
-
     container filter_data;
-
     int filter_len;
-
-    int look_ahead_col;
-    int look_ahead_state;
-
     token temp_token;
 
-    tokenID type = ID_Token;
+    tokenID kind;
 
-    int current_state;
-    int current_col;
+    int state;
+    int look_ahead;
+
+    int current_column;
+
+    int test_state;
 
     //attempt to open file
     in_file.open(filename, std::fstream::in);
@@ -84,59 +85,69 @@ void driver(std::string filename){
     while (!filter_data.end_of_file){
 
         filter_data = refresh_filter(in_file, line_no);
-
         filter_len = filter_data.filter.length();
 
-        if (filter_data.line_no != -1) { 
+        if (!filter_data.end_of_file) { 
             //in here, each filter will be broken into individual tokens and stored in a vector
-            current_state = s1;
-
+            state = s1;
+            kind = tokenID(s1);
             //iterate over the filter
             for (int i = 0; i <= filter_len - 2; i++){
                 //all logic for tokenization goes in here
-                current_col = get_col(filter_data.filter[i]);
-                //type = current_state;
-                current_state = FSA_Table[current_state][current_col];
-
-                if (current_state == ERROR) { // input was invalid
-                    std::cout << "ERROR: token cannot begin with an uppercase letter\nExiting program...\n";
+                current_column = get_col(filter_data.filter[i]);
+                look_ahead = FSA_Table[state][current_column];
+                kind = tokenID(state);
+                if (look_ahead == ERROR){
+                    std::cout << "ERROR token cannot start with uppercase letter, exiting program...\n";
                     early_exit();
                 }
 
-                if (current_state != s1) temp_string += filter_data.filter[i]; // if not white space then toss the char into the working token 
+                if (look_ahead != s1) {
+                    temp_string += filter_data.filter[i];
+                }
+                
+                if (look_ahead == FINAL || temp_string.length() == MAX_ID_LEN){
 
-                look_ahead_col = get_col(filter_data.filter[i+1]);
-                look_ahead_state = FSA_Table[current_state][look_ahead_col];
-
-                if (look_ahead_col == FINAL || temp_string.length() == MAX_ID_LEN){
-                    //generate token and reset string;
                     if (is_keyword(temp_string)){
-                        temp_token = generate_token(temp_string, line_no, Key_Token);
-                        tokens.emplace_back(temp_token);
+                        kind = Key_Token;
                     }
-                    else {
-                        temp_token = generate_token(temp_string, line_no, type);
-                        tokens.emplace_back(temp_token);
-                    }
+                    temp_token.line_no = line_no;
+                    temp_token.token_string = temp_string;
+                    temp_token.token_type = kind;
+
+                    tokens.emplace_back(temp_token);
+
                     temp_string = "";
-                    current_state = s1;
+                    state = s1;
+                }
+                else {
+                    state = look_ahead;
                 }
 
             }
+            if (temp_string != ""){
+                //if there is characters in the working token then turn it to a token
+                kind = tokenID(state);
 
+                if (is_keyword(temp_string)){
+                        kind = Key_Token;
+                }
+
+                temp_token.line_no = line_no;
+                temp_token.token_string = temp_string;
+                temp_token.token_type = kind;
+
+                tokens.emplace_back(temp_token);
+                temp_string = "";
+            }
         }
     }
 
     //here end of file is reached
 
-    if (temp_string != ""){
-        //if there is characters in the working token then turn it to a token
-        temp_token = generate_token(temp_string, line_no, type);
-        tokens.emplace_back(temp_token);
 
-        print_vector(tokens);
 
-    }
+    print_vector(tokens);
 
 
     in_file.close();
@@ -148,18 +159,12 @@ void print_file_error(std::string filename){
 }
 
 container refresh_filter(std::fstream &infile, int &line_no){
-
     container temp;
-
     while (1){
-        
         if (std::getline(infile, temp.filter)){     // gets line if not EOF
-
             temp.line_no = line_no; 
             line_no++; 
-
             remove_comments(temp.filter);           // attempt to remove comments
-
             if (!all_ws(temp.filter)) break;        // if filter is not empty after removing comments then filter is good           
         }
         else {                                      // end of file is reached
@@ -172,7 +177,6 @@ container refresh_filter(std::fstream &infile, int &line_no){
 
 bool all_ws(std::string text){
     //function that determines if a string is all white space
-
     int len = text.length();
     if (len == 0) return true;
     for (int i = 0; i < len ; i++) if (text[i] != ' ') return false;
@@ -182,12 +186,9 @@ bool all_ws(std::string text){
 void remove_comments(std::string &text){
     // function to remove comments from the filter, will recursively call itself after removing comments
     // this is to ensure full removal of comments even if there are multiple comments embeded on a single line
-
     int len = text.length();
     int open_com = -10, close_com = -10;
-
     if (all_ws(text)) return;
-
     if (!open_comment){                                 // if there is not currently open comments
         for (int i = 0; i <= len - 2; i++){             // iterate through string
             if (text[i] == '&' && text[i+1] == '&'){    // && detected
@@ -235,21 +236,14 @@ void early_exit() {
 int get_col(char c){
     auto temp = m.find(c);
     if (temp == m.end()){
-        std::cout << "ERROR: " << c << " is not a valid symbol\nProgram exiting...\n";
+        //std::cout << "ERROR: " << c << " is not a valid symbol\nProgram exiting...\n";
         early_exit();
     }
     else {
+        //std::cout << "col for " << c << " is " << temp->second << std::endl;
         return temp->second;
     }
     return -1;
-}
-
-token generate_token(std::string text, int line_no, tokenID tk_type){
-    token temp;
-    temp.line_no = line_no;
-    temp.token_string = text;
-    temp.token_type = tk_type;
-    return temp;
 }
 
 void print_vector(std::vector<token> &v){

@@ -1,4 +1,4 @@
-#include "scanner.cpp"
+#include "scanner.hpp"
 
 void print_arg_error();
 
