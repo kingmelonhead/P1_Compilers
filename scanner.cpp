@@ -102,7 +102,7 @@ void driver(std::string filename){
                     early_exit();
                 }
 
-                if (look_ahead != s1) {
+                if (look_ahead != s1 && current_column != ws) {
                     temp_string += filter_data.filter[i];
                 }
                 
