@@ -2,6 +2,10 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <map>
+#include "token.hpp"
+
+#define MAX_ID_LEN 8
 
 void driver(std::string);
 void print_file_error(std::string);
@@ -17,3 +21,13 @@ container refresh_filter(std::fstream &, int &);
 bool all_ws(std::string);
 
 void remove_comments(std::string &);
+
+void early_exit();
+
+int get_col(char);
+
+token generate_token(std::string, int, tokenID);
+
+void print_vector(std::vector<token> &);
+
+bool is_keyword(std::string);
