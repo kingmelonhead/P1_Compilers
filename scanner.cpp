@@ -203,6 +203,7 @@ int get_col(char c, std::map<char, columns> &m){
     auto temp = m.find(c);
     if (temp == m.end()){
         //char isnt found
+        std::cout << "ERROR: " << c << " is not a valid symbol\nExiting program...\n";
         early_exit();
     }
     else {
