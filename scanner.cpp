@@ -62,7 +62,7 @@ void driver(std::string filename){
                     std::cout << "ERROR: Token can not begin with '" << filter_data.filter[i] << "'\nexiting program....\n";
                     early_exit();
                 }
-                else if (look_ahead == FINAL || temp_string.length() == MAX_ID_LEN){        
+                else if (look_ahead == FINAL || (temp_string.length() == MAX_ID_LEN && tokenID(state) == ID_Token)){        
                     //this character leads to a state that signals the previous working token is ready to be cut off, or that we need to manually cut it off because it is longer than 8 characters long
                     if (is_keyword(temp_string)) tokens.emplace_back(gen_token(temp_string, line_no, Key_Token));
                     else tokens.emplace_back(gen_token(temp_string, line_no, tokenID(state)));
