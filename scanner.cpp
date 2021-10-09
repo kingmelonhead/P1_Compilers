@@ -39,17 +39,63 @@ int FSA_Table[state_no][col_no] = {
 /* s23  ] */ {FINAL,   FINAL, FINAL,  FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, FINAL, ERROR},
 };
 
-
-
 void driver(std::string filename){
 
     std::vector<token> tokens;
     std::string temp_string = "";
     token temp_token;
-    tokenID kind;
     container filter_data;
     int filter_len, state, look_ahead, current_column, line_no = 1;
 
+    open_file(filename);                                                //open file, or at least try to
+
+    while (!filter_data.end_of_file){
+        filter_data = refresh_filter(in_file, line_no);                 //this gets a line from file that needs to be converted to tokens
+        filter_len = filter_data.filter.length();           
+        if (!filter_data.end_of_file) {                                 //in here, each filter will be broken into individual tokens and stored in a vector
+            state = s1;
+            temp_string = "";
+            for (int i = 0; i <= filter_len - 2; i++){                  //iterate over the filter, all logic for tokenization goes in here
+                current_column = get_col(filter_data.filter[i], m);
+                look_ahead = FSA_Table[state][current_column];
+                if (look_ahead == ERROR){                               //the character being evaluated here would lead to an error state, ie. we dont have a state that can deal with it
+                    std::cout << "ERROR: Token can not begin with '" << filter_data.filter[i] << "'\nexiting program....\n";
+                    early_exit();
+                }
+                else if (look_ahead == FINAL || temp_string.length() == MAX_ID_LEN){        
+                    //this character leads to a state that signals the previous working token is ready to be cut off, or that we need to manually cut it off because it is longer than 8 characters long
+                    if (is_keyword(temp_string)) tokens.emplace_back(gen_token(temp_string, line_no, Key_Token));
+                    else tokens.emplace_back(gen_token(temp_string, line_no, tokenID(state)));
+                    temp_string = "";
+                    state = s1;
+                    look_ahead = FSA_Table[state][current_column];
+                    if (look_ahead == ERROR){                           //after finalizing the token, after re evaluiating the character, it leads to an error state
+                        std::cout << "ERROR: Token can not begin with '" << filter_data.filter[i] << "'\nexiting program....\n";
+                        early_exit();
+                    }
+                    if (current_column != ws) temp_string += filter_data.filter[i];
+                    if (look_ahead != FINAL) state = look_ahead;        //if the future state isnt a final state, we can move to that state for the next iteration
+                }
+                else {                                                  //here the character leads to neiter a final or error state so the character is simply appended to the working token, if its not white space, which it shouldnt be regardless
+                    if (current_column != ws) temp_string += filter_data.filter[i];
+                    state = look_ahead;                                 //move to the next state, this is safe because the program reaching this line indicates that
+                }
+            }
+            if (temp_string != ""){                                     //if there is characters in the working token then turn it to a token
+                if (is_keyword(temp_string)) tokens.emplace_back(gen_token(temp_string, line_no, Key_Token));
+                else tokens.emplace_back(gen_token(temp_string, line_no, tokenID(state)));
+            }
+        }
+    }
+    //here end of file is reached
+    print_vector(tokens);
+
+    //-------- TOKENS SHOULD BE READY FOR THE PARSER AS OF NOW -----------------//
+    in_file.close();
+    return;
+}
+
+void open_file(std::string filename){
     //attempt to open file
     in_file.open(filename, std::fstream::in);
 
@@ -58,54 +104,10 @@ void driver(std::string filename){
         in_file.close();
         print_file_error(filename);
     }
-
-    while (!filter_data.end_of_file){
-
-        filter_data = refresh_filter(in_file, line_no);
-        filter_len = filter_data.filter.length();
-
-        if (!filter_data.end_of_file) { 
-            //in here, each filter will be broken into individual tokens and stored in a vector
-            state = s1;
-            kind = tokenID(s1);
-            //iterate over the filter
-            for (int i = 0; i <= filter_len - 2; i++){
-                //all logic for tokenization goes in here
-                current_column = get_col(filter_data.filter[i], m);
-                look_ahead = FSA_Table[state][current_column];
-                kind = tokenID(state);
-                if (look_ahead == ERROR){
-                    std::cout << "ERROR token cannot start with uppercase letter, exiting program...\n";
-                    early_exit();
-                }
-
-                if (look_ahead != s1 && current_column != ws) temp_string += filter_data.filter[i];
-                
-                if (look_ahead == FINAL || temp_string.length() == MAX_ID_LEN){
-                    if (is_keyword(temp_string)) kind = Key_Token;
-                    temp_token = gen_token(temp_string, line_no, kind);
-                    tokens.emplace_back(temp_token);
-                    temp_string = "";
-                    state = s1;
-                }
-                else state = look_ahead;
-            }
-            if (temp_string != ""){
-                //if there is characters in the working token then turn it to a token
-                kind = tokenID(state);
-                if (is_keyword(temp_string)) kind = Key_Token;
-                temp_token = gen_token(temp_string, line_no, kind);
-                tokens.emplace_back(temp_token);
-                temp_string = "";
-            }
-        }
-    }
-    //here end of file is reached
-    print_vector(tokens);
-    in_file.close();
 }
 
 token gen_token(std::string text, int line_no, tokenID kind){
+    //generates token and returns it, uses info passed to fill the fields
     token temp;
     temp.line_no = line_no;
     temp.token_string = text;
@@ -114,11 +116,13 @@ token gen_token(std::string text, int line_no, tokenID kind){
 }
 
 void print_file_error(std::string filename){
+    //prints an error if file cant open
     std::cout << "Error: The provided file " << filename << " does not exist in the current directory.\nExiting Program...\n";
-    exit(0);
+    early_exit();
 }
 
 container refresh_filter(std::fstream &infile, int &line_no){
+    //function to keep pulling lines from file until line isnt all white space after removing comments
     container temp;
     while (1){
         if (std::getline(infile, temp.filter)){     // gets line if not EOF
@@ -189,34 +193,42 @@ void remove_comments(std::string &text){
 }
 
 void early_exit() {
+    //something went wrong so cleanup and exit
     if (in_file.is_open()) in_file.close();
     exit (0);
 }
 
 int get_col(char c, std::map<char, columns> &m){
+    //this function checks to see if the current char is in our vocab
     auto temp = m.find(c);
     if (temp == m.end()){
-        //std::cout << "ERROR: " << c << " is not a valid symbol\nProgram exiting...\n";
+        //char isnt found
         early_exit();
     }
     else {
-        //std::cout << "col for " << c << " is " << temp->second << std::endl;
+        //char is found and its associated column # for the FSA is returned
         return temp->second;
     }
+    //something terribly wrong and unexpected happens if code makes it to this return statement
     return -1;
 }
 
 void print_vector(std::vector<token> &v){
-    token temp;
+    //loop through vector
     for (int i = 0; i < v.size(); i++){
-        temp = v.at(i);
+        //pull next element from vector
+        token temp = v.at(i);
+        //display token information to console
         std::cout << "('" << temp.token_string << "', line: " << temp.line_no << ", type: " << tokenNames[temp.token_type] << ")\n";
     }
 }
 
 bool is_keyword(std::string text){
+    //loop through collection of keywords
     for (int i = 0; i < 16; i++){
+        //if passed string matches one of the keywords then return true
         if (text == keywords[i]) return true;
     }
+    //otherwise it isnt a keyword
     return false;
 }

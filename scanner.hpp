@@ -16,3 +16,4 @@ bool all_ws(std::string);
 bool is_keyword(std::string);
 void remove_comments(std::string &);
 void early_exit();
+void open_file(std::string);
