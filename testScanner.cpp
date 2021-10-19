@@ -3,7 +3,7 @@
 
 std::string tokenNames[] = {"whitespace", "Identifier", "Number", "Assignment Op (=)", "Comparison Op (==)", "Greater Than", "Less Than", "Colon", "Define Op (:=)", "Add", "Subtract", "Multiply", 
                             "Divide", "Percent", "Period", "Opening Parenthesis", "Closing Parenthesis", "Comma", "Opening Curley Brace", "Closing Curly Brace", "Semi-colon",
-                            "Opening Square Brace", "Closing Square Brace", "Keyword"};
+                            "Opening Square Brace", "Closing Square Brace", "Keyword", "EOF"};
 
 void print_vector(std::vector<token> &v){
     //loop through vector

@@ -9,57 +9,61 @@ How to remove build files:
 
 
 How to run:
-
+    ./P1 someFile
+    *where someFile is just some file containing text*
 
 What program does:
+    Opens a text file containing code in our schools language
+    removes comments and wite space line by line
+    breaks input file into tokens and stores them in a vector for use later on when we build our parser and other components of the compiler
 
-input:
+example input:
 
-if($num== 2){
-    c=a/b;
-    d = 454545454224;
-    namenamename;
-}
+    if($num== 2){
+        c=a/b;
+        d = 454545454224;
+        namenamename;
+    }
 
-for (int i = $dog){
-    dogName = peter;
-}
+    for (int i = $dog){
+        dogName = peter;
+    }
 
 
-output:
+output using example input:
 
-('if', line: 2, type: Keyword)
-('(', line: 2, type: Opening Parenthesis)
-('$num', line: 2, type: Identifier)
-('==', line: 2, type: Comparison Op (==))
-('2', line: 2, type: Number)
-(')', line: 2, type: Closing Parenthesis)
-('{', line: 2, type: Opening Curley Brace)
-('c', line: 3, type: Identifier)
-('=', line: 3, type: Assignment Op (=))
-('a', line: 3, type: Identifier)
-('/', line: 3, type: Divide)
-('b', line: 3, type: Identifier)
-(';', line: 3, type: Semi-colon)
-('d', line: 4, type: Identifier)
-('=', line: 4, type: Assignment Op (=))
-('454545454224', line: 4, type: Number)
-(';', line: 4, type: Semi-colon)
-('namename', line: 5, type: Identifier)
-('name', line: 5, type: Identifier)
-(';', line: 5, type: Semi-colon)
-('}', line: 6, type: Closing Curly Brace)
-('for', line: 8, type: Keyword)
-('(', line: 8, type: Opening Parenthesis)
-('int', line: 8, type: Identifier)
-('i', line: 8, type: Identifier)
-('=', line: 8, type: Assignment Op (=))
-('$dog', line: 8, type: Identifier)
-(')', line: 8, type: Closing Parenthesis)
-('{', line: 8, type: Opening Curley Brace)
-('dogName', line: 9, type: Identifier)
-('=', line: 9, type: Assignment Op (=))
-('peter', line: 9, type: Identifier)
-(';', line: 9, type: Semi-colon)
-('}', line: 10, type: Closing Curly Brace)
+    ('if', line: 2, type: Keyword)
+    ('(', line: 2, type: Opening Parenthesis)
+    ('$num', line: 2, type: Identifier)
+    ('==', line: 2, type: Comparison Op (==))
+    ('2', line: 2, type: Number)
+    (')', line: 2, type: Closing Parenthesis)
+    ('{', line: 2, type: Opening Curley Brace)
+    ('c', line: 3, type: Identifier)
+    ('=', line: 3, type: Assignment Op (=))
+    ('a', line: 3, type: Identifier)
+    ('/', line: 3, type: Divide)
+    ('b', line: 3, type: Identifier)
+    (';', line: 3, type: Semi-colon)
+    ('d', line: 4, type: Identifier)
+    ('=', line: 4, type: Assignment Op (=))
+    ('454545454224', line: 4, type: Number)
+    (';', line: 4, type: Semi-colon)
+    ('namename', line: 5, type: Identifier)
+    ('name', line: 5, type: Identifier)
+    (';', line: 5, type: Semi-colon)
+    ('}', line: 6, type: Closing Curly Brace)
+    ('for', line: 8, type: Keyword)
+    ('(', line: 8, type: Opening Parenthesis)
+    ('int', line: 8, type: Identifier)
+    ('i', line: 8, type: Identifier)
+    ('=', line: 8, type: Assignment Op (=))
+    ('$dog', line: 8, type: Identifier)
+    (')', line: 8, type: Closing Parenthesis)
+    ('{', line: 8, type: Opening Curley Brace)
+    ('dogName', line: 9, type: Identifier)
+    ('=', line: 9, type: Assignment Op (=))
+    ('peter', line: 9, type: Identifier)
+    (';', line: 9, type: Semi-colon)
+    ('}', line: 10, type: Closing Curly Brace)
 

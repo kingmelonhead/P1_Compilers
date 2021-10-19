@@ -85,7 +85,8 @@ std::vector<token> driver(std::string filename){
             }
         }
     }
-
+    //toss end of file token in there
+    tokens.emplace_back(gen_token("", ++line_no, EOF_Token));
     //-------- TOKENS SHOULD BE READY FOR THE PARSER AS OF NOW -----------------//
     in_file.close();
     return tokens;

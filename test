@@ -1,4 +1,4 @@
-_if($num== 2){
+if($num== 2){
     c=a/b;
     d = 454545454224;
     namenamename;
@@ -7,4 +7,3 @@ _if($num== 2){
 for (int i = $dog){
     dogName = peter;
 }
-AAAAAAA

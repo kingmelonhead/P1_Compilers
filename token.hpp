@@ -5,7 +5,7 @@
 #include <map>
 
 enum tokenID {WHITESPACE, ID_Token, Num_Token, Ass_Token, Comp_Token, Greater_Token, Less_Token, Col_Token, Def_Token, Plu_Token, Min_Token, Mult_Token, Div_Token, 
-                Perc_Token, Dot_Token, LParen_Token, RParen_Token, Com_Token, LCur_Token, RCur_Token, Semi_Token, LSqBra_Token, RSqBr_Token, Key_Token};
+                Perc_Token, Dot_Token, LParen_Token, RParen_Token, Com_Token, LCur_Token, RCur_Token, Semi_Token, LSqBra_Token, RSqBr_Token, Key_Token, EOF_Token};
 
 struct token { 
     tokenID token_type;
