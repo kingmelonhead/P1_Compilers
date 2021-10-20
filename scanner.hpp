@@ -8,6 +8,8 @@
 
 #define KEYWORD_COUNT 16
 #define MAX_ID_LEN 8
+#define SOURCE_FILE 2
+#define KEYBOARD 1
 
 struct container {
     std::string filter = "";
@@ -16,13 +18,13 @@ struct container {
 };
 
 container refresh_filter(std::fstream &, int &, bool &);
-std::vector<token> driver(std::string);
+std::vector<token> driver(std::string, int);
 void print_file_error(std::string);
 bool all_ws(std::string);
 bool is_keyword(std::string);
 void remove_comments(std::string &, bool &);
 void early_exit();
 void open_file(std::string);
-int get_col(char); 
+int get_col(char, int, int); 
 
 #endif

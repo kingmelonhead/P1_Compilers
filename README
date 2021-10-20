@@ -12,6 +12,18 @@ How to run:
     ./P1 someFile
     *where someFile is just some file containing text*
 
+    -- or --
+
+    ./P1
+
+    *this will work with keyboard input*
+
+    -- or --
+
+    ./P1 < someFile
+
+    *works via input redirection along the same branch as the keyboard input*
+
 What program does:
     Opens a text file containing code in our schools language
     removes comments and wite space line by line

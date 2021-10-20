@@ -3,13 +3,17 @@
 #include <iostream>
 
 std::fstream in_file;
+int input;
 
-std::vector<token> driver(std::string filename){
+std::vector<token> driver(std::string filename, int mode){
 
     const int state_no = 23;
     const int col_no = 25;
     const int ERROR = -1;
     const int FINAL = 100;
+    int char_count;
+
+    input = mode;
 
     int FSA_Table[state_no][col_no] = {
         //               a-z     A-Z      0-9     $     =       >      <      :     +       -      *      /      %      .      (      )      ,      {      }      ;      [     ]     WS     EOF   OTHER
@@ -43,9 +47,10 @@ std::vector<token> driver(std::string filename){
     std::string temp_string = "";
     token temp_token;
     container filter_data;
-    int filter_len, state, look_ahead, current_column, line_no = 1;
+    int filter_len, state, look_ahead, current_column, line_no = 0;
 
-    open_file(filename);                                                //open file, or at least try to
+    if (input == SOURCE_FILE) open_file(filename);   
+    else std::cout << "You have chosen to use keyboard input. To signal EOF use ctrl + D on a new line.\n";                                             //open file, or at least try to
 
     while (!filter_data.end_of_file){
         filter_data = refresh_filter(in_file, line_no, open_comment);                 //this gets a line from file that needs to be converted to tokens
@@ -53,8 +58,10 @@ std::vector<token> driver(std::string filename){
         if (!filter_data.end_of_file) {                                 //in here, each filter will be broken into individual tokens and stored in a vector
             state = s1;
             temp_string = "";
-            for (int i = 0; i <= filter_len - 2; i++){                  //iterate over the filter, all logic for tokenization goes in here
-                current_column = get_col(filter_data.filter[i]);
+            char_count = 0;
+            for (int i = 0; i <= filter_len - 2; i++){     
+                char_count++;             //iterate over the filter, all logic for tokenization goes in here
+                current_column = get_col(filter_data.filter[i], line_no, char_count);
                 look_ahead = FSA_Table[state][current_column];
                 if (look_ahead == ERROR){                               //the character being evaluated here would lead to an error state, ie. we dont have a state that can deal with it
                     std::cout << "ERROR: Token can not begin with '" << filter_data.filter[i] << "'\nexiting program....\n";
@@ -88,7 +95,8 @@ std::vector<token> driver(std::string filename){
     //toss end of file token in there
     tokens.emplace_back(gen_token("", ++line_no, EOF_Token));
     //-------- TOKENS SHOULD BE READY FOR THE PARSER AS OF NOW -----------------//
-    in_file.close();
+    if (input == SOURCE_FILE) in_file.close();
+    std::cout << std::endl;
     return tokens;
 }
 
@@ -122,16 +130,33 @@ container refresh_filter(std::fstream &infile, int &line_no, bool & open_comment
     //function to keep pulling lines from file until line isnt all white space after removing comments
     container temp;
     while (1){
-        if (std::getline(infile, temp.filter)){     // gets line if not EOF
-            temp.line_no = line_no; 
-            line_no++; 
-            remove_comments(temp.filter, open_comment);           // attempt to remove comments
-            if (!all_ws(temp.filter)) break;        // if filter is not empty after removing comments then filter is good           
+        if (input == SOURCE_FILE) {
+            if (std::getline(infile, temp.filter)){     // gets line if not EOF
+                line_no++; 
+                temp.line_no = line_no; 
+                remove_comments(temp.filter, open_comment);           // attempt to remove comments
+                if (!all_ws(temp.filter)) break;        // if filter is not empty after removing comments then filter is good           
+            }
+            else {                                      // end of file is reached
+                temp.end_of_file = true;
+                break;
+            }
         }
-        else {                                      // end of file is reached
-            temp.end_of_file = true;
-            break;
+        else { // keyboard input
+            std::cout << "Line " << line_no + 1 << ":";
+            if (std::getline(std::cin, temp.filter)){     // gets line if not EOF
+                line_no++; 
+                temp.line_no = line_no; 
+                temp.filter += " ";
+                remove_comments(temp.filter, open_comment);           // attempt to remove comments
+                if (!all_ws(temp.filter)) break;        // if filter is not empty after removing comments then filter is good           
+            }
+            else {                                      // end of file is reached
+                temp.end_of_file = true;
+                break;
+            }
         }
+        
     }
     return temp;
 }
@@ -195,7 +220,7 @@ void early_exit() {
     exit (0);
 }
 
-int get_col(char c){
+int get_col(char c, int line_no, int char_count){
     std::map <char, columns> m = {
         {'a',low}, {'b',low}, {'c',low}, {'d',low}, {'e',low}, {'f',low}, {'g',low}, {'h',low}, {'i',low}, {'j',low}, {'k',low}, {'l',low}, {'m',low},
         {'n',low}, {'o',low}, {'p',low}, {'q',low}, {'r',low}, {'s',low}, {'t',low}, {'u',low}, {'v',low}, {'w',low}, {'x',low}, {'y',low}, {'z',low},
@@ -209,7 +234,7 @@ int get_col(char c){
     auto temp = m.find(c);
     if (temp == m.end()){
         //char isnt found
-        std::cout << "ERROR: " << c << " is not a valid symbol\nExiting program...\n";
+        std::cout << "ERROR: " << c << " on line " << line_no << " at position " << char_count << " is not a valid symbol\nExiting program...\n";
         early_exit();
     }
     else {
