@@ -9,18 +9,18 @@ How to remove build files:
 
 
 How to run:
-    ./P1 someFile
+    ./Scanner someFile
     *where someFile is just some file containing text*
 
     -- or --
 
-    ./P1
+    ./Scanner
 
     *this will work with keyboard input*
 
     -- or --
 
-    ./P1 < someFile
+    ./Scanner < someFile
 
     *works via input redirection along the same branch as the keyboard input*
 
