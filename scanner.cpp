@@ -59,7 +59,7 @@ std::vector<token> driver(std::string filename, int mode){
             state = s1;
             temp_string = "";
             char_count = 0;
-            for (int i = 0; i <= filter_len - 2; i++){     
+            for (int i = 0; i <= filter_len - 1; i++){     
                 char_count++;             //iterate over the filter, all logic for tokenization goes in here
                 current_column = get_col(filter_data.filter[i], line_no, char_count);
                 look_ahead = FSA_Table[state][current_column];
